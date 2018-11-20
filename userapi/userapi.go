@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -50,6 +51,7 @@ func (h *Handler) getAllUser(w http.ResponseWriter, r *http.Request) {
 	if WriteError(w, err) {
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
 	WriteJson(w, users)
 
 }
@@ -68,31 +70,87 @@ func (h *Handler) getUser(w http.ResponseWriter, r *http.Request) {
 	if WriteError(w, err) {
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
 	WriteJson(w, user)
 }
 
 func (h *Handler) updateUser(w http.ResponseWriter, r *http.Request) {
-	users, err := h.userService.FindAll()
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
 	if WriteError(w, err) {
 		return
 	}
-	WriteJson(w, users)
+	u, err := h.userService.FindByID(id)
+	if WriteError(w, err) {
+		return
+	}
+
+	b, err := ioutil.ReadAll(r.Body)
+	if WriteError(w, err) {
+		return
+	}
+
+	var update struct {
+		FirstName *string `json:"first_name"`
+		LastName  *string `json:"last_name"`
+		Email     *string `json:"email"`
+	}
+
+	err = json.Unmarshal(b, &update)
+	if WriteError(w, err) {
+		return
+	}
+
+	if update.FirstName != nil {
+		u.FirstName = *update.FirstName
+	}
+	if update.LastName != nil {
+		u.LastName = *update.LastName
+	}
+	if update.Email != nil {
+		u.Email = *update.Email
+	}
+
+	if WriteError(w, h.userService.Update(u)) {
+		return
+	}
+
 }
 
 func (h *Handler) deleteUser(w http.ResponseWriter, r *http.Request) {
-	users, err := h.userService.FindAll()
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
 	if WriteError(w, err) {
 		return
 	}
-	WriteJson(w, users)
+	WriteError(w, h.userService.Delete(&user.User{
+		ID: id,
+	}))
+
 }
 
 func (h *Handler) createUser(w http.ResponseWriter, r *http.Request) {
-	users, err := h.userService.FindAll()
+	b, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("users: %s", err), http.StatusInternalServerError)
+		return
+	}
+
+	var u user.User
+	err = json.Unmarshal(b, &u)
 	if WriteError(w, err) {
 		return
 	}
-	WriteJson(w, users)
+
+	err = h.userService.Insert(&u)
+	if WriteError(w, err) {
+		return
+	}
+	w.WriteHeader(http.StatusCreated)
+	if WriteJson(w, u) {
+		return
+	}
+
 }
 
 func StartServer(addr string, db *sql.DB) error {
