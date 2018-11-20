@@ -2,52 +2,66 @@ package main
 
 import (
 	"database/sql"
+	"flag"
 	"fmt"
-	"learnsql/user"
+	"learnsql/userapi"
 	"log"
 
 	_ "github.com/lib/pq"
 )
 
 func main() {
-	user.ConnectDB()
-	// u := &user.User{
-	// 	FirstName: "eiei",
-	// 	LastName:  "eueu",
-	// 	Email:     "xx@gmail.com",
-	// }
-	// user.Insert(u)
-	// fmt.Printf("%#v\n", u)
+	// user.ConnectDB()
+	// // u := &user.User{
+	// // 	FirstName: "eiei",
+	// // 	LastName:  "eueu",
+	// // 	Email:     "xx@gmail.com",
+	// // }
+	// // user.Insert(u)
+	// // fmt.Printf("%#v\n", u)
 
-	us, err := user.FindAll()
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("%#v\n", us)
-
-	u, err := user.FindByID(2)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("%#v\n", u)
-
-	u.Email = "mud077247305@gmail.com"
-	u.FirstName = "go"
-	u.LastName = "lang"
-	err = user.Update(u)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// err = user.Delete(u)
+	// us, err := user.FindAll()
 	// if err != nil {
 	// 	log.Fatal(err)
 	// }
-	us, err = user.FindAll()
+	// fmt.Printf("%#v\n", us)
+
+	// u, err := user.FindByID(2)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// fmt.Printf("%#v\n", u)
+
+	// u.Email = "mud077247305@gmail.com"
+	// u.FirstName = "go"
+	// u.LastName = "lang"
+	// err = user.Update(u)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	// // err = user.Delete(u)
+	// // if err != nil {
+	// // 	log.Fatal(err)
+	// // }
+	// us, err = user.FindAll()
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// fmt.Printf("%#v\n", us)
+
+	host := flag.String("host", "", "Host")
+	port := flag.String("port", "3000", "Port")
+	dbUrl := flag.String("dburl", "", "DB Connection")
+	flag.Parse()
+
+	addr := fmt.Sprintf("%s:%s", *host, *port)
+	//connStr := "postgres://rypsagyu:z57AcaK1q70fwYThQhi6MIHrWgAPFU25@elmer.db.elephantsql.com:5432/rypsagyu"
+	db, err := sql.Open("postgres", *dbUrl)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("%#v\n", us)
+	log.Fatal(userapi.StartServer(addr, db))
 
 }
 
